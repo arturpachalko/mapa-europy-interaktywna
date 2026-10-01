@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mapa Europy - analizę krajów</title>
+    <title>Mapa Europy - analiza krajów</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
     <style>
       * { box-sizing: border-box; }
       :root {
@@ -16,7 +22,6 @@
         --yellow: #f2c94c;
         --orange: #f2994a;
         --green: #2e9d5d;
-        --black: #171717;
         --empty: #f4f7f9;
       }
       body {
@@ -75,7 +80,7 @@
         border-radius: 12px;
         overflow: hidden;
         border: 1px solid var(--panel-border);
-        background: white;
+        background: #ffffff;
       }
       .sidebar { padding: 18px 16px 16px; }
       .legend { margin-bottom: 18px; }
@@ -130,6 +135,15 @@
         outline: 2px solid rgba(42, 109, 246, 0.2);
         border-color: #2a6df6;
       }
+      .status-message {
+        padding: 12px 14px;
+        background: #fff5d7;
+        border: 1px solid #efd388;
+        color: #6b4a00;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+      }
       @media (max-width: 980px) {
         .content { grid-template-columns: 1fr; }
         #map { height: 620px; }
@@ -176,6 +190,11 @@
       </main>
     </div>
 
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script>
       const countryList = [
         { displayName: 'Albania', mapNames: ['Albania'] },
@@ -390,8 +409,8 @@
           worldCopyJump: false
         }).setView([53, 16], 3.2);
 
-        const baseLayer = L.geoJSON([], { style: { color: '#cccccc', weight: 1, fillColor: '#ffffff', fillOpacity: 1 } });
-        baseLayer.addTo(map);
+        map.createPane('bgPane');
+        map.getPane('bgPane').style.background = '#ffffff';
 
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
           .then((response) => {
