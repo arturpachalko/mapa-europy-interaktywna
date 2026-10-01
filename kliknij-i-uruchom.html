@@ -233,7 +233,6 @@
         { displayName: 'Polska', mapNames: ['Poland'] },
         { displayName: 'Portugalia', mapNames: ['Portugal'] },
         { displayName: 'Rumunia', mapNames: ['Romania'] },
-        { displayName: 'Rosja', mapNames: ['Russia'] },
         { displayName: 'San Marino', mapNames: ['San Marino'] },
         { displayName: 'Serbia', mapNames: ['Serbia'] },
         { displayName: 'Słowacja', mapNames: ['Slovakia'] },
@@ -415,8 +414,8 @@
           worldCopyJump: false
         }).setView([53, 16], 3.2);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; OpenStreetMap contributors, &copy; CartoDB'
         }).addTo(map);
 
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
