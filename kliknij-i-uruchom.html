@@ -3,13 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mapa Europy - kliknij i uruchom</title>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
+    <title>Mapa Europy - analizę krajów</title>
     <style>
       * { box-sizing: border-box; }
       :root {
@@ -18,11 +12,12 @@
         --panel-border: #dfe6ee;
         --text: #1f2a37;
         --muted: #5d6b7a;
+        --gray: #d9dde3;
+        --yellow: #f2c94c;
+        --orange: #f2994a;
         --green: #2e9d5d;
-        --red: #d9485f;
         --black: #171717;
         --empty: #f4f7f9;
-        --outline: #7d8a97;
       }
       body {
         margin: 0;
@@ -80,6 +75,7 @@
         border-radius: 12px;
         overflow: hidden;
         border: 1px solid var(--panel-border);
+        background: white;
       }
       .sidebar { padding: 18px 16px 16px; }
       .legend { margin-bottom: 18px; }
@@ -100,9 +96,10 @@
         border: 1px solid rgba(17, 17, 17, 0.2);
         display: inline-block;
       }
-      .swatch-green { background: var(--green); }
-      .swatch-red { background: var(--red); }
-      .swatch-black { background: var(--black); }
+      .swatch-0 { background: var(--gray); }
+      .swatch-1 { background: var(--yellow); }
+      .swatch-2 { background: var(--orange); }
+      .swatch-3 { background: var(--green); }
       .swatch-empty { background: var(--empty); }
       table {
         width: 100%;
@@ -133,22 +130,6 @@
         outline: 2px solid rgba(42, 109, 246, 0.2);
         border-color: #2a6df6;
       }
-      .leaflet-container { background: #eaf1f8; }
-      .leaflet-control-zoom {
-        border: none !important;
-        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12) !important;
-        border-radius: 12px !important;
-      }
-      .leaflet-control-zoom a { border-radius: 10px !important; }
-      .status-message {
-        padding: 12px 14px;
-        background: #fff5d7;
-        border: 1px solid #efd388;
-        color: #6b4a00;
-        border-radius: 10px;
-        margin-bottom: 12px;
-        font-size: 0.95rem;
-      }
       @media (max-width: 980px) {
         .content { grid-template-columns: 1fr; }
         #map { height: 620px; }
@@ -172,9 +153,10 @@
         <aside class="sidebar panel">
           <div class="legend">
             <h2>Legenda</h2>
-            <div class="legend-item"><span class="swatch swatch-green"></span> 1 - zielony</div>
-            <div class="legend-item"><span class="swatch swatch-red"></span> 2 - czerwony</div>
-            <div class="legend-item"><span class="swatch swatch-black"></span> 0 - czarny</div>
+            <div class="legend-item"><span class="swatch swatch-0"></span> 0 - brak potrzebnej analizy</div>
+            <div class="legend-item"><span class="swatch swatch-1"></span> 1 - potrzebna analiza</div>
+            <div class="legend-item"><span class="swatch swatch-2"></span> 2 - wykonana częściowa analiza</div>
+            <div class="legend-item"><span class="swatch swatch-3"></span> 3 - wykonana pełna analiza</div>
             <div class="legend-item"><span class="swatch swatch-empty"></span> brak danych - bez koloru</div>
           </div>
 
@@ -194,11 +176,6 @@
       </main>
     </div>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
     <script>
       const countryList = [
         { displayName: 'Albania', mapNames: ['Albania'] },
@@ -242,15 +219,15 @@
         { displayName: 'Turcja', mapNames: ['Turkey'] },
         { displayName: 'Ukraina', mapNames: ['Ukraine'] },
         { displayName: 'Węgry', mapNames: ['Hungary'] },
-        { displayName: 'Wielka Brytania', mapNames: ['United Kingdom', 'England', 'Great Britain', 'UK'] },
-        { displayName: 'Włochy', mapNames: ['Italy'] },
-        { displayName: 'Anglia', mapNames: ['United Kingdom', 'England', 'Great Britain', 'UK'] }
+        { displayName: 'Wielka Brytania', mapNames: ['United Kingdom', 'Great Britain', 'UK'] },
+        { displayName: 'Włochy', mapNames: ['Italy'] }
       ];
 
       const valueColors = {
-        0: '#171717',
-        1: '#2e9d5d',
-        2: '#d9485f'
+        0: '#d9dde3',
+        1: '#f2c94c',
+        2: '#f2994a',
+        3: '#2e9d5d'
       };
 
       const noValueColor = '#f4f7f9';
@@ -272,8 +249,7 @@
         const defaults = {
           poland: 1,
           niemcy: 1,
-          anglia: 2,
-          england: 2,
+          wielkabrytania: 2,
           unitedkingdom: 2,
           greatbritain: 2,
           uk: 2,
@@ -303,7 +279,7 @@
           const input = document.createElement('input');
           input.type = 'number';
           input.min = '0';
-          input.max = '2';
+          input.max = '3';
           input.step = '1';
           input.value = value === '' ? '' : value;
           input.dataset.country = displayName;
@@ -315,7 +291,7 @@
 
             if (raw === '') {
               input.value = '';
-            } else if (!Number.isInteger(numericValue) || numericValue < 0 || numericValue > 2) {
+            } else if (!Number.isInteger(numericValue) || numericValue < 0 || numericValue > 3) {
               input.value = raw.slice(0, 1);
             }
 
@@ -414,9 +390,8 @@
           worldCopyJump: false
         }).setView([53, 16], 3.2);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; OpenStreetMap contributors, &copy; CartoDB'
-        }).addTo(map);
+        const baseLayer = L.geoJSON([], { style: { color: '#cccccc', weight: 1, fillColor: '#ffffff', fillOpacity: 1 } });
+        baseLayer.addTo(map);
 
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
           .then((response) => {
