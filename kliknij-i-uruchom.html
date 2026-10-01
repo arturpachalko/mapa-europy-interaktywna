@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mapa Europy - kliknij i uruchom</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <style>
+      * { box-sizing: border-box; }
+      :root {
+        --bg: #eef2f6;
+        --panel: #ffffff;
+        --panel-border: #dfe6ee;
+        --text: #1f2a37;
+        --muted: #5d6b7a;
+        --green: #2e9d5d;
+        --red: #d9485f;
+        --black: #171717;
+        --empty: #f4f7f9;
+        --outline: #7d8a97;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .page-wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px 18px 36px;
+      }
+      .page-header {
+        margin-bottom: 18px;
+      }
+      .page-header h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 2vw, 2.5rem);
+      }
+      .content {
+        display: grid;
+        grid-template-columns: minmax(0, 2.2fr) minmax(320px, 0.8fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        box-shadow: 0 7px 18px rgba(15, 23, 42, 0.06);
+      }
+      .map-panel { padding: 14px; }
+      .map-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+      }
+      button {
+        border: 0;
+        border-radius: 10px;
+        background: #2a6df6;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 10px 14px;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      button:hover {
+        opacity: 0.95;
+        transform: translateY(-1px);
+      }
+      #map {
+        width: 100%;
+        height: 760px;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--panel-border);
+      }
+      .sidebar { padding: 18px 16px 16px; }
+      .legend { margin-bottom: 18px; }
+      .legend h2, .table-wrap h2 {
+        margin: 0 0 12px;
+        font-size: 1.15rem;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid rgba(17, 17, 17, 0.2);
+        display: inline-block;
+      }
+      .swatch-green { background: var(--green); }
+      .swatch-red { background: var(--red); }
+      .swatch-black { background: var(--black); }
+      .swatch-empty { background: var(--empty); }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border: 1px solid var(--panel-border);
+      }
+      th, td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--panel-border);
+        text-align: left;
+      }
+      th {
+        background: #f6f8fb;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      tbody tr:last-child td { border-bottom: 0; }
+      input[type="number"] {
+        width: 72px;
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 7px 8px;
+        font-size: 0.95rem;
+        text-align: center;
+      }
+      input[type="number"]:focus {
+        outline: 2px solid rgba(42, 109, 246, 0.2);
+        border-color: #2a6df6;
+      }
+      .leaflet-container { background: #eaf1f8; }
+      .leaflet-control-zoom {
+        border: none !important;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12) !important;
+        border-radius: 12px !important;
+      }
+      .leaflet-control-zoom a { border-radius: 10px !important; }
+      .status-message {
+        padding: 12px 14px;
+        background: #fff5d7;
+        border: 1px solid #efd388;
+        color: #6b4a00;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+      }
+      @media (max-width: 980px) {
+        .content { grid-template-columns: 1fr; }
+        #map { height: 620px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-wrap">
+      <header class="page-header">
+        <h1>Interaktywna mapa Europy</h1>
+      </header>
+
+      <main class="content">
+        <section class="map-panel panel">
+          <div class="map-toolbar">
+            <button id="reset-values" type="button">Resetuj wartości</button>
+          </div>
+          <div id="map"></div>
+        </section>
+
+        <aside class="sidebar panel">
+          <div class="legend">
+            <h2>Legenda</h2>
+            <div class="legend-item"><span class="swatch swatch-green"></span> 1 - zielony</div>
+            <div class="legend-item"><span class="swatch swatch-red"></span> 2 - czerwony</div>
+            <div class="legend-item"><span class="swatch swatch-black"></span> 0 - czarny</div>
+            <div class="legend-item"><span class="swatch swatch-empty"></span> brak danych - bez koloru</div>
+          </div>
+
+          <div class="table-wrap">
+            <h2>Dane krajów</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Kraj</th>
+                  <th>Wartość</th>
+                </tr>
+              </thead>
+              <tbody id="country-table-body"></tbody>
+            </table>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script>
+      const countryList = [
+        { displayName: 'Albania', mapNames: ['Albania'] },
+        { displayName: 'Andora', mapNames: ['Andorra'] },
+        { displayName: 'Austria', mapNames: ['Austria'] },
+        { displayName: 'Belgia', mapNames: ['Belgium'] },
+        { displayName: 'Białoruś', mapNames: ['Belarus'] },
+        { displayName: 'Bośnia i Hercegowina', mapNames: ['Bosnia and Herz.'] },
+        { displayName: 'Bułgaria', mapNames: ['Bulgaria'] },
+        { displayName: 'Chorwacja', mapNames: ['Croatia'] },
+        { displayName: 'Cypr', mapNames: ['Cyprus'] },
+        { displayName: 'Czechy', mapNames: ['Czechia', 'Czech Republic'] },
+        { displayName: 'Dania', mapNames: ['Denmark'] },
+        { displayName: 'Estonia', mapNames: ['Estonia'] },
+        { displayName: 'Finlandia', mapNames: ['Finland'] },
+        { displayName: 'Francja', mapNames: ['France'] },
+        { displayName: 'Grecja', mapNames: ['Greece'] },
+        { displayName: 'Hiszpania', mapNames: ['Spain'] },
+        { displayName: 'Holandia', mapNames: ['Netherlands'] },
+        { displayName: 'Irlandia', mapNames: ['Ireland'] },
+        { displayName: 'Islandia', mapNames: ['Iceland'] },
+        { displayName: 'Liechtenstein', mapNames: ['Liechtenstein'] },
+        { displayName: 'Litwa', mapNames: ['Lithuania'] },
+        { displayName: 'Luksemburg', mapNames: ['Luxembourg'] },
+        { displayName: 'Łotwa', mapNames: ['Latvia'] },
+        { displayName: 'Macedonia', mapNames: ['Macedonia', 'North Macedonia'] },
+        { displayName: 'Malta', mapNames: ['Malta'] },
+        { displayName: 'Mołdawia', mapNames: ['Moldova'] },
+        { displayName: 'Monako', mapNames: ['Monaco'] },
+        { displayName: 'Niemcy', mapNames: ['Germany'] },
+        { displayName: 'Norwegia', mapNames: ['Norway'] },
+        { displayName: 'Polska', mapNames: ['Poland'] },
+        { displayName: 'Portugalia', mapNames: ['Portugal'] },
+        { displayName: 'Rumunia', mapNames: ['Romania'] },
+        { displayName: 'Rosja', mapNames: ['Russia'] },
+        { displayName: 'San Marino', mapNames: ['San Marino'] },
+        { displayName: 'Serbia', mapNames: ['Serbia'] },
+        { displayName: 'Słowacja', mapNames: ['Slovakia'] },
+        { displayName: 'Słowenia', mapNames: ['Slovenia'] },
+        { displayName: 'Szwajcaria', mapNames: ['Switzerland'] },
+        { displayName: 'Szwecja', mapNames: ['Sweden'] },
+        { displayName: 'Turcja', mapNames: ['Turkey'] },
+        { displayName: 'Ukraina', mapNames: ['Ukraine'] },
+        { displayName: 'Węgry', mapNames: ['Hungary'] },
+        { displayName: 'Wielka Brytania', mapNames: ['United Kingdom', 'England', 'Great Britain', 'UK'] },
+        { displayName: 'Włochy', mapNames: ['Italy'] },
+        { displayName: 'Anglia', mapNames: ['United Kingdom', 'England', 'Great Britain', 'UK'] }
+      ];
+
+      const valueColors = {
+        0: '#171717',
+        1: '#2e9d5d',
+        2: '#d9485f'
+      };
+
+      const noValueColor = '#f4f7f9';
+      const europeanCountryNames = new Set(countryList.flatMap((country) => country.mapNames));
+      const tableBody = document.getElementById('country-table-body');
+      const resetButton = document.getElementById('reset-values');
+
+      function normalizeName(value) {
+        return String(value || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .trim()
+          .toLowerCase();
+      }
+
+      function getDefaultValueForCountry(displayName) {
+        const key = normalizeName(displayName);
+        const defaults = {
+          poland: 1,
+          niemcy: 1,
+          anglia: 2,
+          england: 2,
+          unitedkingdom: 2,
+          greatbritain: 2,
+          uk: 2,
+          francja: 0,
+          france: 0
+        };
+        return defaults[key] ?? '';
+      }
+
+      function buildTable() {
+        const uniqueCountryList = countryList.filter(
+          (country, index, self) =>
+            index === self.findIndex((item) => item.displayName === country.displayName)
+        );
+
+        tableBody.innerHTML = '';
+
+        uniqueCountryList.forEach((country) => {
+          const row = document.createElement('tr');
+          const displayName = country.displayName;
+          const value = getDefaultValueForCountry(displayName);
+
+          const cellName = document.createElement('td');
+          cellName.textContent = displayName;
+
+          const cellValue = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = '0';
+          input.max = '2';
+          input.step = '1';
+          input.value = value === '' ? '' : value;
+          input.dataset.country = displayName;
+          input.placeholder = '-';
+
+          input.addEventListener('input', () => {
+            const raw = input.value.trim();
+            const numericValue = raw === '' ? null : Number(raw);
+
+            if (raw === '') {
+              input.value = '';
+            } else if (!Number.isInteger(numericValue) || numericValue < 0 || numericValue > 2) {
+              input.value = raw.slice(0, 1);
+            }
+
+            updateMap();
+          });
+
+          cellValue.appendChild(input);
+          row.appendChild(cellName);
+          row.appendChild(cellValue);
+          tableBody.appendChild(row);
+        });
+      }
+
+      function getInputValueByCountry(displayName) {
+        const selected = document.querySelector(`input[data-country="${CSS.escape(displayName)}"]`);
+        if (!selected) return null;
+        const parsed = Number(selected.value);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      function styleFeature(feature) {
+        const featureName = feature.properties &&
+          (feature.properties.name ||
+            feature.properties.NAME ||
+            feature.properties.ADMIN ||
+            feature.properties.NAME_EN ||
+            feature.properties.country);
+
+        if (!featureName) {
+          return {
+            fillColor: noValueColor,
+            fillOpacity: 1,
+            color: '#7d8a97',
+            weight: 1,
+            opacity: 1
+          };
+        }
+
+        const normalizedName = normalizeName(featureName);
+        const countryEntry = countryList.find((item) =>
+          item.mapNames.some((name) => normalizeName(name) === normalizedName)
+        );
+
+        const countryDisplayName = countryEntry ? countryEntry.displayName : null;
+        const inputValue = countryDisplayName ? getInputValueByCountry(countryDisplayName) : null;
+        const value = inputValue ?? null;
+
+        return {
+          fillColor: value === null ? noValueColor : valueColors[value],
+          fillOpacity: value === null ? 0.2 : 0.9,
+          color: value === null ? '#8392a4' : '#38414a',
+          weight: 1.1,
+          opacity: 1
+        };
+      }
+
+      function attachMapLayer(features) {
+        const europeFeatures = features.filter((feature) => {
+          const names = [
+            feature.properties?.name,
+            feature.properties?.NAME,
+            feature.properties?.ADMIN,
+            feature.properties?.NAME_EN,
+            feature.properties?.country
+          ];
+
+          return names.some((name) => {
+            if (!name) return false;
+            const normalized = normalizeName(name);
+            return [...europeanCountryNames].some((countryName) =>
+              normalizeName(countryName) === normalized
+            );
+          });
+        });
+
+        return L.geoJSON(europeFeatures, {
+          style: styleFeature,
+          onEachFeature: (feature, layer) => {
+            const name = feature.properties &&
+              (feature.properties.name ||
+                feature.properties.NAME ||
+                feature.properties.ADMIN ||
+                feature.properties.NAME_EN ||
+                feature.properties.country);
+
+            layer.bindTooltip(name || 'Kraj');
+          }
+        });
+      }
+
+      function initializeMap() {
+        const map = L.map('map', {
+          zoomControl: true,
+          minZoom: 2,
+          maxZoom: 6,
+          worldCopyJump: false
+        }).setView([53, 16], 3.2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+          .then((response) => {
+            if (!response.ok) throw new Error('Nie udało się pobrać danych mapy.');
+            return response.json();
+          })
+          .then((data) => {
+            const europeLayer = attachMapLayer(data.features || []);
+            if (europeLayer.getLayers().length === 0) {
+              const status = document.createElement('div');
+              status.className = 'status-message';
+              status.textContent = 'Nie znaleziono danych dla krajów Europy. Spróbuj odświeżyć stronę.';
+              document.getElementById('map').prepend(status);
+              return;
+            }
+            europeLayer.addTo(map);
+            map._geoLayer = europeLayer;
+          })
+          .catch((error) => {
+            const status = document.createElement('div');
+            status.className = 'status-message';
+            status.textContent = 'Wystąpił problem z wczytaniem mapy Europy. Otwórz tę stronę w przeglądarce, a jeśli nadal nie działa, sprawdź połączenie internetowe.';
+            document.getElementById('map').prepend(status);
+            console.error(error);
+          });
+
+        return map;
+      }
+
+      function updateMap() {
+        if (window.mapInstance && window.mapInstance._geoLayer) {
+          window.mapInstance._geoLayer.setStyle(styleFeature);
+        }
+      }
+
+      function resetValues() {
+        const inputs = document.querySelectorAll('#country-table-body input');
+        inputs.forEach((input) => {
+          const countryName = input.dataset.country;
+          input.value = getDefaultValueForCountry(countryName);
+        });
+        updateMap();
+      }
+
+      buildTable();
+      window.mapInstance = initializeMap();
+      resetButton.addEventListener('click', resetValues);
+    </script>
+  </body>
+</html>
